@@ -1,0 +1,32 @@
+1. West vs (West) - in paranthesis
+
+"address": {
+    "city": "Mulund West",
+    "street": "Gajanan Darshan Society",
+    "housenumber": "Shop No 6",
+    "postcode": "400080"
+  }
+
+  vs
+
+   "address": {
+    "city": "Mulund (East)",
+    "street": "Navghar Marg"
+  }
+
+
+2. Marg/marg, Nagar, Chowk
+
+3. Bldg, Bldg.
+
+4.
+  - Dual/Alternate names: "street": "Shahid Bhagat Singh Marg (Lower Colaba Road)",
+
+  - "Mohmad Shahid Marg (Morland Road)",
+
+
+
+PLAN
+
+- Fix the above issues directly in DB if possible, otherwise in JSON then upload to DB
+-

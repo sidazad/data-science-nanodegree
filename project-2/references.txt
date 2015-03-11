@@ -1,0 +1,6 @@
+References
+
+http://docs.mongodb.org/manual/
+http://docs.mongodb.org/manual/reference/method/cursor.sort/
+http://stackoverflow.com/questions/14109474/mongodb-mongoimport-too-large-failure-parsing-errors
+https://github.com/sidazad/ezmongo
