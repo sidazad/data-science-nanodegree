@@ -1,6 +1,6 @@
 import sys
 
-sys.path.append("../dsutils")
+#sys.path.append("../dsutils")
 import pandas as pd
 import pandasql
 from dsutils import stat_test
@@ -10,6 +10,30 @@ from ggplot import *
 def get_data(filename="improved_set.csv"):
     return pd.read_csv(filename)
 
+def get_rain_norain_entries(df):
+    """
+        Return the 'raw' entries for (rain, norain)
+    """
+    entries = df.rename(columns={'UNIT': 'unit', 'ENTRIESn_hourly': 'entries'})
+    return (entries[entries["rain"] == 1]["entries"], entries[entries["rain"] != 1]["entries"])
+
+
+def get_rain_norain_data(df):
+    """
+        Return the 'raw' entries for (rain, norain)
+    """
+    entries = df.rename(columns={'UNIT': 'unit', 'ENTRIESn_hourly': 'entries'})
+    return (entries[entries["rain"] == 1], entries[entries["rain"] != 1])
+
+def get_no_rain_entries(df):
+    df = df.rename(columns={'UNIT': 'unit', 'ENTRIESn_hourly': 'entries'})
+    q = """
+        SELECT entries from df where rain=1
+    """
+    entries = pandasql.sqldf(q, locals())
+    #print entries
+    #print entries[entries["rain"]!=1]["SUM(entries)"]
+    return (entries[entries["rain"] == 1]["SUM(entries)"], entries[entries["rain"] != 1]["SUM(entries)"])
 
 def get_entries_by_date(df):
     df = df.rename(columns={'UNIT': 'unit', 'ENTRIESn_hourly': 'entries', 'DATEn': 'date'})
@@ -82,7 +106,7 @@ def part1():
     are_normal = check_normality(rain, norain)
 
     print are_normal
-    if not stat_test.mann_whitney_t_test(norain.values, rain.values):
+    if not stat_test.t_test(norain.values, rain.values):
         print "Null Hypothesis Failed implying Rain and No Rain data are not the same"
     print len(rain.values), len(norain.values)
     print stat_test.get_mean_median(rain.values)
@@ -93,8 +117,8 @@ def part3_histogram():
     df = get_data()
     # print df.head(100)
     rain, norain = get_rain_norain_entries_by_date(df)
-    print ggplot(rain,aes(x='entries')) + geom_histogram(data=rain,binwidth=100000, fill='red', alpha=0.2) + geom_histogram(data=norain,binwidth=100000, fill='green', alpha=0.3)
-    #print ggplot(aes(x='entries'), data=rain) + geom_histogram(binwidth=100000) +  ggtitle("RAIN")
+    #print ggplot(rain,aes(x='entries')) + geom_histogram(data=rain,binwidth=100000, fill='red', alpha=0.2) + geom_histogram(data=norain,binwidth=100000, fill='green', alpha=0.3)
+    print ggplot(aes(x='entries'), data=rain) + geom_histogram(binwidth=100000) +  ggtitle("RAIN")
     #print ggplot(aes(x='entries'), data=norain) + geom_histogram(binwidth=100000) +  ggtitle("NO RAIN")
 
 def ridership_by_date(df):
@@ -102,14 +126,14 @@ def ridership_by_date(df):
     print entries.head(5)
     entries['date'] = entries['date'].apply(lambda x: int(x.split("-")[1]))
     print entries.head(5)
-    print ggplot(aes(x='date', y='entries'), data=entries) + geom_line()
+    print ggplot(aes(x='date', y='entries'), data=entries) + geom_line() + labs(title="Ridership trends by date", x="Number of Entries", y="Day of Month")
 
 def ridership_by_hour(df):
     entries = get_entries_by_hour(df)
     print entries.head(5)
     #entries['date'] = entries['date'].apply(lambda x: int(x.split("-")[1]))
     print entries.head(5)
-    print ggplot(aes(x='hour', y='entries'), data=entries) + geom_line()
+    print ggplot(aes(x='hour', y='entries'), data=entries) + geom_line() + labs(title="Ridership trends during the day", x="Number of Entries", y="Hour of Day")
 
 
 
@@ -122,35 +146,56 @@ def find_top_five_busy_units(df):
     entries = get_entries_by_unit(df)
     entries = entries.sort(columns=['entries'], ascending=False)
     print entries
-    print ggplot(entries,aes(x='entries')) + geom_histogram(data=entries,binwidth=100000, fill='blue')
+    print ggplot(entries,aes(x='entries')) + geom_histogram(data=entries,binwidth=100000, fill='blue') + \
+          labs(title="Top 5 Busiest Entries", x="Bins for Number of Entries", y="Number of turnstile units in this bin")
 
 
 def part5():
     df = get_data()
     find_top_five_busy_units(df)
 
-if __name__ == "__main__":
-    #part1()
-    #part3_histogram()
-    #part3_freeform()
-    part5()
 
 
 def check_normality(rain, norain):
     return (stat_test.is_normal(rain.values), stat_test.is_normal(norain.values))
 
 
+def part1_redux():
+    df = get_data()
+    # print df.head(100)
+    rain, norain = get_rain_norain_entries(df)
+    are_normal = check_normality(rain, norain)
+
+    print are_normal
+    if not stat_test.mann_whitney_u_test(norain.values, rain.values):
+        print "Null Hypothesis Rejected implying Rain and No Rain data are not the same"
+    else:
+        print "Null Hypothesis Accepted implying Rain and No Rain data are similar"
+    print len(rain.values), len(norain.values)
+    print stat_test.get_mean_median(rain.values)
+    print stat_test.get_mean_median(norain.values)
+
+
+def part3_redux():
+    df = get_data()
+    # print df.head(100)
+    rain, norain = get_rain_norain_data(df)
+    #print rain.head(10)
+    print ggplot(rain, aes(x='entries')) + geom_histogram(data=rain, binwidth=500, fill='red', alpha=0.2) + \
+          geom_histogram(data=norain,  binwidth=500, fill='green', alpha=0.3) + ggtitle("Rain vs. No Rain Ridership") + \
+          labs(x="value of ENTRIESn_hourly", y="Frequency")
+
+
 #
-# if __name__ == "__main__":
-# df = get_data()
-#     #print df.head(100)
-#     rain, norain = get_rain_norain_entries_by_unit(df)
-#     are_normal = check_normality(rain, norain)
-#     print are_normal
-#     if not stat_test.mann_whitney_t_test(norain.values, rain.values):
-#         print "Null Hypothesis Failed implying Rain and No Rain data are not the same"
-#     print stat_test.get_mean_median(rain.values)
-#     print stat_test.get_mean_median(norain.values)
+if __name__ == "__main__":
+    #part1_redux()
+    #part3_redux()
+    #part3_freeform()
+    #part3_histogram()
+    #df = get_data()
+    #ridership_by_date(df)
+    part5()
+
 
 
 
